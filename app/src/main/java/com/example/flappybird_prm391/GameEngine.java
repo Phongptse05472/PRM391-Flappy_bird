@@ -205,7 +205,7 @@ public class GameEngine {
         // Draw score
         drawingScore = numberDisplay.bigNum2Display(String.valueOf(score));
         for(int i = 0; i < drawingScore.size(); i++){
-            canvas.drawBitmap(drawingScore.get(i), SCORE_X, SCORE_Y + i*30 , null);
+            canvas.drawBitmap(drawingScore.get(i), SCORE_X + drawingScore.get(i).getWidth()*i + 10, SCORE_Y, null);
         }
     }
 
