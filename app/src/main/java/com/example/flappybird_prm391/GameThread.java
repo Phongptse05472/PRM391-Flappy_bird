@@ -21,7 +21,7 @@ public class GameThread extends Thread {
 
     public GameThread(Context context, Resources resources, SurfaceHolder surfaceHolder){
         this.surfaceHolder = surfaceHolder;
-        this.gameEngine = new GameEngine(context, resources);
+//        this.gameEngine = new GameEngine(context, resources);
         this.isRunning = true;
     }
 
