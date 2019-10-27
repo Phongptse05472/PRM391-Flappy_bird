@@ -2,25 +2,24 @@ package com.example.flappybird_prm391;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.PictureInPictureParams;
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Matrix;
 import android.graphics.Point;
-import android.graphics.Rect;
 import android.os.Handler;
 import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
 
-import java.util.Random;
-import java.util.stream.IntStream;
+import com.example.flappybird_prm391.model.Bird;
+import com.example.flappybird_prm391.model.Pipe;
 
-/**\
- * gameview
+import java.util.Random;
+
+/**
+ * Due to low performed switched to using SurfaceView instead
  */
+@Deprecated
 public class GameView extends View {
 
     /**
@@ -34,46 +33,32 @@ public class GameView extends View {
     Runnable runnable;
 
     /**
-     * Background image resource
+     * Bird object
      */
-    Bitmap background;
+    Bird bird;
 
     /**
-     * Bird image resource
+     * Pipe objects
      */
-    Bitmap[] bird;
-
-    private int birdWidth;
-
-    private int birdHeight;
+    Pipe[] topPipe, bottomPipe;
 
     /**
-     * Current bird frame index
+     * Offset thats define how much pipes can move up and down
      */
-    private int birdFrame = 1;
-
-    private int velocity = 0;
-
-    private int birdX, birdY;
-
-    //
-    Bitmap topPipe, bottomPipe;
-
     private int minPipeOffset, maxPipeOffset;
 
-    private int[] pipeX;
-
-    private int[] topPipeY;
-
+    /**
+     * Random for calculate pipe move up down value and some random resources to be loaded
+     */
     Random random;
 
     /**
-     *
+     * Game state
      */
-    private boolean playing = false;
+    private boolean playing = false, gameover = false;
 
     /**
-     *
+     * Device display
      */
     Display display;
 
@@ -87,21 +72,17 @@ public class GameView extends View {
     int screenWidth;
 
     /**
-     * Playzone
-     */
-    Rect rect;
-
-    /**
      * Screen refresh rate count in milisecond
      */
-    private final int REFRESH_RATE = 20;
+    private final int SCREEN_DELAY_MILIS = 20;
 
     /**
      * Game setting !!!
      */
     private final int GRAVITY = 3;
+    // Careful when setting GAP value (must be < maxPipeOffset)
     private final int PIPE_GAP = 400;
-    private final int PIPE_DISTANCE = 600;
+    private final int PIPE_DISTANCE = 700;
     private final int PIPE_NUMBER = 2;
     private final int PIPE_VELOCITY = 6;
 
@@ -111,36 +92,32 @@ public class GameView extends View {
     public GameView(Context context) {
         super(context);
         // Initialize screen
-        background = BitmapFactory.decodeResource(getResources(), R.drawable.background_day);
+        random = new Random();
+        setBackgroundResource(random.nextBoolean() ? R.drawable.background_day : R.drawable.background_night);
         display = ((Activity) getContext()).getWindowManager().getDefaultDisplay();
         Point point = new Point();
         display.getSize(point);
         screenWidth = point.x;
         screenHeight = point.y;
-        rect = new Rect(0,0, screenWidth, screenHeight);
-        // Initialize bird params
-        bird = new Bitmap[3];
-        bird[0] = BitmapFactory.decodeResource(getResources(), R.drawable.yellowbird_downflap);
-        bird[1] = BitmapFactory.decodeResource(getResources(), R.drawable.yellowbird_midflap);
-        bird[2] = BitmapFactory.decodeResource(getResources(), R.drawable.yellowbird_upflap);
-        birdWidth = bird[0].getWidth();
-        birdHeight = bird[0].getHeight();
-        birdX = screenWidth/2 - birdWidth/2;
-        birdY = screenHeight/2 - birdHeight/2;
-        // Initialize pipe params
-        bottomPipe = BitmapFactory.decodeResource(getResources(), R.drawable.pipe_green);
-        Matrix matrix = new Matrix();
-        matrix.postRotate(180);
-        topPipe = Bitmap.createBitmap(bottomPipe, 0, 0, bottomPipe.getWidth(), bottomPipe.getHeight(), matrix, true);
-        minPipeOffset = PIPE_GAP/2;
-        maxPipeOffset = screenHeight - minPipeOffset - PIPE_GAP;
-        random = new Random();
-        pipeX = new int[PIPE_NUMBER];
-        topPipeY = new int[PIPE_NUMBER];
+        // Initialize pipe objects
+        // Resource images size might not compatible with users divice so we need to calculate scale for resizing
+        float pipeScale = getPipeResizeScale();
+        topPipe = new Pipe[PIPE_NUMBER];
+        bottomPipe = new Pipe[PIPE_NUMBER];
         for(int i = 0; i < PIPE_NUMBER; i++){
-            pipeX[i] = screenWidth + i*PIPE_DISTANCE;
+            topPipe[i] = new Pipe(getResources(), true, pipeScale);
+            bottomPipe[i] = new Pipe(getResources(), false, pipeScale);
+            topPipe[i].setX(screenWidth + i*PIPE_DISTANCE);
+            bottomPipe[i].setX(screenWidth + i*PIPE_DISTANCE);
         }
-
+        minPipeOffset = screenHeight/4;
+        maxPipeOffset = screenHeight/2;
+        // Initialize bird object
+        // Resource images size might not compatible with users divice so we need to calculate scale for resizing
+        float birdScale = getBirdResizeScale();
+        bird = new Bird(getResources(), birdScale);
+        bird.setX(screenWidth/2 - bird.getWidth()/2);
+        bird.setY(screenHeight/2 - bird.getHeight()/2);
         // Draw the screen
         handler = new Handler();
         runnable = new Runnable() {
@@ -158,45 +135,38 @@ public class GameView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        // Draw background
-        canvas.drawBitmap(background, null, rect, null);
         if(playing){
             // Calculate birds new position
-            velocity -= GRAVITY;
-            birdY -= velocity;
-            // Update bird frame by its velocity
-            if (velocity < 20 && velocity > -20){
-                birdFrame = 1;
-            } else if(velocity >= 20) {
-                birdFrame = 0;
-            } else {
-                birdFrame = 2;
-            }
+            bird.setVelocity(bird.getVelocity() - GRAVITY);
+            bird.setY(bird.getY() - bird.getVelocity());
             //
             for(int i = 0; i < PIPE_NUMBER; i++) {
-                pipeX[i] -= PIPE_VELOCITY;
-                if(pipeX[i] < -topPipe.getWidth()){
-                    pipeX[i] += PIPE_NUMBER * PIPE_DISTANCE;
-                    topPipeY[i] = minPipeOffset + random.nextInt(maxPipeOffset - minPipeOffset + 1);
+                topPipe[i].setX(topPipe[i].getX() - PIPE_VELOCITY);
+                // if pipe moved out the screen so put it back to started position
+                // reset its Y coordinate too
+                if(topPipe[i].getX() < -topPipe[i].getWidth()){
+                    System.out.println(topPipe[i].getX());
+                    topPipe[i].setX(topPipe[i].getX() + (PIPE_NUMBER * PIPE_DISTANCE));
+                    System.out.println(topPipe[i].getX());
+                    topPipe[i].setY(minPipeOffset + random.nextInt(maxPipeOffset - minPipeOffset + 1));
                 }
             }
             // Die if bird touch the ground
-            if(birdY > screenHeight - birdHeight - 100) {
+            if(bird.getY() > screenHeight - bird.getHeight() - 100) {
                 playing = false;
             }
-    //        System.out.println(birdY);
         }
         // Draw bird
-        canvas.drawBitmap(bird[birdFrame],
-                birdX,
-                birdY,
+        canvas.drawBitmap(bird.getFrame()[bird.getCurrentFrame()],
+                bird.getX(),
+                bird.getY(),
                 null);
         // Draw pipes
         for(int i = 0; i < PIPE_NUMBER; i++){
-            canvas.drawBitmap(topPipe, pipeX[i], topPipeY[i] - topPipe.getHeight(), null);
-            canvas.drawBitmap(bottomPipe, pipeX[i], topPipeY[i] + PIPE_GAP, null);
+            canvas.drawBitmap(topPipe[i].getFrame(), topPipe[i].getX(), topPipe[i].getY() - topPipe[i].getHeight(), null);
+            canvas.drawBitmap(bottomPipe[i].getFrame(), topPipe[i].getX(), topPipe[i].getY() + PIPE_GAP, null);
         }
-        handler.postDelayed(runnable, REFRESH_RATE);
+        handler.postDelayed(runnable, SCREEN_DELAY_MILIS);
 
     }
 
@@ -207,18 +177,34 @@ public class GameView extends View {
         // Catch on tap screen
         if(action == MotionEvent.ACTION_DOWN){
             // Keeps the bird not flying out the screen
-            System.out.println(birdY);
-            System.out.println(birdHeight);
-            if(birdY > birdHeight + 150) {
-                velocity = 35;
+            if(bird.getY() > bird.getHeight() + 150) {
+                bird.setVelocity(35);
             }
             if(!playing){
                 playing = true;
-                handler.postDelayed(runnable, REFRESH_RATE);
+                handler.postDelayed(runnable, SCREEN_DELAY_MILIS);
             }
         }
 
         // No callback parent class
         return true;
+    }
+
+    /**
+     * Calculate pipe resize scale number based on pipe height and screen height (pHeight = 4/5 sHeight)
+     * @return scale
+     */
+    private float getPipeResizeScale(){
+        int rawPipeHeight = BitmapFactory.decodeResource(getResources(), R.drawable.pipe_green_bottom).getHeight();
+        return (screenHeight/1.25f) / rawPipeHeight;
+    }
+
+    /**
+     * Calculate bird resize scale number based on pipe height and screen height (pHeight = 1/20 sHeight)
+     * @return scale
+     */
+    private float getBirdResizeScale(){
+        int rawBirdHeight = BitmapFactory.decodeResource(getResources(), R.drawable.yellowbird_midflap).getHeight();
+        return (screenHeight/20.0f) / rawBirdHeight;
     }
 }
