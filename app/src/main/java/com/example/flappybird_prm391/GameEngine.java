@@ -7,7 +7,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Point;
+import android.util.DisplayMetrics;
 import android.view.Display;
+import android.view.WindowManager;
 
 import com.example.flappybird_prm391.model.Bird;
 import com.example.flappybird_prm391.model.Ground;
@@ -27,7 +29,7 @@ public class GameEngine {
     /**
      * String number -> screen display number generator
      */
-    NumberDisplayController numberDisplay;
+    private NumberDisplayController numberDisplay;
 
     /**
      * Device display
@@ -42,6 +44,16 @@ public class GameEngine {
      * Coordinate of screen right
      */
     private int screenWidth;
+
+    /**
+     * Ready state
+     */
+    private Bitmap ready, manual;
+    private float READY_X;
+    private float READY_Y;
+    private float MANUAL_X;
+    private float MANUAL_Y;
+    private boolean manualShowing = true;
 
     /**
      * Bird object
@@ -102,7 +114,7 @@ public class GameEngine {
      */
     private int pipe_distance;
 
-    public GameEngine(Context context, Resources resources) {
+    public GameEngine(Context context, Resources resources, Point screensize) {
         // Initialize sound
         sound = new SoundController(context);
         // Initialize display number generator
@@ -110,14 +122,21 @@ public class GameEngine {
         drawingScore = numberDisplay.bigNum2Display(String.valueOf(score));
         // Initialize screen
         random = new Random();
-        display = ((Activity) context).getWindowManager().getDefaultDisplay();
-        Point point = new Point();
-        display.getSize(point);
-        screenWidth = point.x;
-        screenHeight = point.y;
+        screenHeight = screensize.y;
+        screenWidth = screensize.x;
+//        setScreenSize(context);
         SCORE_X = screenHeight * 0.1f;
         SCORE_Y = screenWidth * 0.15f;
         pipe_distance = Math.round(screenWidth * PIPE_DISTANCE_SCREENWITDH_RELATIVE);
+        // Initialize ready state object
+        ready = BitmapFactory.decodeResource(resources, R.drawable.title_ready);
+        ready = Bitmap.createScaledBitmap(ready, Math.round(ready.getWidth()*((screenHeight/7.0f) / ready.getHeight())), Math.round(ready.getHeight()*((screenHeight/7.0f) / ready.getHeight())), true);
+        READY_X = (screenWidth - ready.getWidth())/2;
+        READY_Y = screenHeight * 0.2f;
+        manual = BitmapFactory.decodeResource(resources, R.drawable.img_manual);
+        manual = Bitmap.createScaledBitmap(manual, Math.round(manual.getWidth()*((screenHeight/5.0f) / manual.getHeight())), Math.round(manual.getHeight()*((screenHeight/5.0f) / manual.getHeight())), true);
+        MANUAL_X = (screenWidth - manual.getWidth())/2;
+        MANUAL_Y = READY_Y + ready.getHeight() + 100;
         // Initialize pipe objects
         minPipeOffset = Math.round(screenHeight/4f);
         maxPipeOffset = Math.round(screenHeight/2.5f);
@@ -175,6 +194,7 @@ public class GameEngine {
                         && (bird.getY() >= (bottomPipe[nextPipe].getY() - bird.getHeight()) || bird.getY() <= (topPipe[nextPipe].getY() + topPipe[0].getHeight())))) {
                 playing = false;
                 sound.playHit();
+                gameover = true;
             }
             // Score counting
             if(bird.getX() > topPipe[nextPipe].getX() + bird.getWidth()/2){
@@ -209,6 +229,16 @@ public class GameEngine {
         }
     }
 
+    public void ready(Canvas canvas){
+        if(manualShowing){
+            canvas.drawBitmap(ready, READY_X, READY_Y,null);
+            canvas.drawBitmap(manual, MANUAL_X, MANUAL_Y,null);
+            manualShowing = false;
+        } else {
+            manualShowing = true;
+        }
+    }
+
     /**
      * Calculate pipe resize scale number based on pipe height and screen height (pHeight = 4/5 sHeight)
      * @return scale
@@ -234,6 +264,19 @@ public class GameEngine {
     private float getGroundResizeScale(Resources resources){
         int rawGroundHeight = BitmapFactory.decodeResource(resources, R.drawable.base).getHeight();
         return (screenHeight/5.0f) / rawGroundHeight;
+    }
+
+    /**
+     * Get screen size
+     * @param context activity context
+     */
+    private void setScreenSize(Context context){
+        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        Display display = wm.getDefaultDisplay();
+        DisplayMetrics metrics = new DisplayMetrics();
+        display.getMetrics(metrics);
+        screenWidth = metrics.widthPixels;
+        screenHeight = metrics.heightPixels;
     }
 
     public boolean isPlaying() {

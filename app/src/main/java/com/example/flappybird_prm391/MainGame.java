@@ -1,6 +1,7 @@
 package com.example.flappybird_prm391;
 
 import android.app.Activity;
+import android.graphics.Point;
 import android.os.Bundle;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
@@ -14,12 +15,10 @@ public class MainGame extends Activity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        RelativeLayout layout = new RelativeLayout(this);
-        layout.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT));
-        gameView = new GameView_SurfaceView(this);
-        layout.addView(gameView);
-        setContentView(layout);
+        Point displaySize = new Point();
+        getWindowManager().getDefaultDisplay().getRealSize(displaySize);
+        gameView = new GameView_SurfaceView(this, displaySize);
+        setContentView(gameView);
     }
 
     @Override

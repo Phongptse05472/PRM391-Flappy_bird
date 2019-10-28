@@ -9,8 +9,8 @@ import java.util.List;
 
 public class NumberDisplayController {
 
-    Bitmap[] smallNums = new Bitmap[10];
-    Bitmap[] bigNums = new Bitmap[10];
+    private Bitmap[] smallNums = new Bitmap[10];
+    private Bitmap[] bigNums = new Bitmap[10];
 
     public NumberDisplayController(Resources resources) {
         smallNums[0] = BitmapFactory.decodeResource(resources, R.drawable.num0_small);
@@ -35,8 +35,8 @@ public class NumberDisplayController {
         bigNums[9] = BitmapFactory.decodeResource(resources, R.drawable.num9);
     }
 
-    public List<Bitmap> smallNum2Display(String num){
-        List<Bitmap> result = new ArrayList(num.length());
+    List<Bitmap> smallNum2Display(String num){
+        List<Bitmap> result = new ArrayList<>(num.length());
         try {
             Integer.parseInt(num);
         } catch (NumberFormatException ex) {
@@ -49,8 +49,8 @@ public class NumberDisplayController {
         return result;
     }
 
-    public List<Bitmap> bigNum2Display(String num){
-        List<Bitmap> result = new ArrayList(num.length());
+    List<Bitmap> bigNum2Display(String num){
+        List<Bitmap> result = new ArrayList<>(num.length());
         try {
             Integer.parseInt(num);
         } catch (NumberFormatException ex) {
