@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/gameScreen"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" >
+
+    <com.example.flappybird_prm391.GameView_SurfaceView
+        android:id="@+id/gameView"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/gameOverLayout"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent">
+
+        <ImageView
+            android:id="@+id/imgGameOver"
+            android:layout_width="338dp"
+            android:layout_height="86dp"
+            android:layout_marginBottom="60dp"
+            android:src="@drawable/title_gameover"
+            app:layout_constraintBottom_toTopOf="@+id/scoreBoard"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.493"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <ImageButton
+            android:id="@+id/btnScoreSmall"
+            android:layout_width="120dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="60dp"
+            android:layout_marginEnd="72dp"
+            android:adjustViewBounds="true"
+            android:background="@null"
+            android:scaleType="fitXY"
+            android:src="@drawable/btn_score_small"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/scoreBoard" />
+
+        <ImageButton
+            android:id="@+id/btnOk"
+            android:layout_width="120dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="72dp"
+            android:layout_marginTop="60dp"
+            android:background="@null"
+            android:scaleType="fitXY"
+            android:src="@drawable/btn_ok"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/scoreBoard" />
+
+        <ImageView
+            android:id="@+id/scoreBoard"
+            android:layout_width="262dp"
+            android:layout_height="134dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:src="@drawable/result" />
+
+        <LinearLayout
+            android:id="@+id/scoreDisplay"
+            android:layout_width="72dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="28dp"
+            app:layout_constraintBottom_toBottomOf="@+id/scoreBoard"
+            app:layout_constraintEnd_toEndOf="@+id/scoreBoard"
+            app:layout_constraintTop_toTopOf="@+id/scoreBoard"
+            app:layout_constraintVertical_bias="0.368">
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/bestScoreDisplay"
+            android:layout_width="72dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="28dp"
+            app:layout_constraintBottom_toBottomOf="@+id/scoreBoard"
+            app:layout_constraintEnd_toEndOf="@+id/scoreBoard"
+            app:layout_constraintTop_toTopOf="@+id/scoreBoard"
+            app:layout_constraintVertical_bias="0.798">
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</FrameLayout>
