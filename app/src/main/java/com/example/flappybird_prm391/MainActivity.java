@@ -1,6 +1,7 @@
 package com.example.flappybird_prm391;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -12,36 +13,53 @@ import android.widget.ImageView;
 
 public class MainActivity extends Activity {
 
-    ImageView btnPlay;
-
-    ImageView title;
-
-    ImageView demoBird;
-
-    int[] birdImageArray = {
+    int[] birdImageIds = {
             R.drawable.yellowbird_downflap,
             R.drawable.yellowbird_midflap,
             R.drawable.yellowbird_upflap
     };
 
-    private Animation mAnimation;
+    // Prevent duplicate call because of clicking too fast
+    private boolean btnPlayClicked = false;
+    private boolean btnScoreClicked = false;
+
+    // Screen activity
+    Context context;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        btnPlay = findViewById(R.id.btnPlay);
+        context = this;
+        // Btn play onClick event binding
+        ImageView btnPlay = findViewById(R.id.btnPlay);
         btnPlay.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startGame(v);
+                if(!btnPlayClicked){
+                    btnPlayClicked = true;
+                    startGame(v);
+                }
             }
         });
-        title = findViewById(R.id.title);
-        demoBird = findViewById(R.id.demoBird);
+        //
+        ImageView btnViewScore = findViewById(R.id.btnScore);
+        btnViewScore.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!btnScoreClicked){
+                    btnScoreClicked = true;
+                    MainActivity screen = (MainActivity) context;
+                    Intent intent = new Intent(screen, ScoreboardActivity.class);
+                    startActivity(intent);
+                    ((Activity) context).finish();
+                }
+            }
+        });
         // Title go up down animation
+        ImageView title = findViewById(R.id.title);
         title.setVisibility(View.VISIBLE);
-        mAnimation = new TranslateAnimation(
+        Animation mAnimation = new TranslateAnimation(
                 TranslateAnimation.ABSOLUTE, 0f,
                 TranslateAnimation.ABSOLUTE, 0f,
                 TranslateAnimation.RELATIVE_TO_PARENT, 0f,
@@ -52,6 +70,7 @@ public class MainActivity extends Activity {
         mAnimation.setInterpolator(new LinearInterpolator());
         title.setAnimation(mAnimation);
         // Demo bird playing animation
+        final ImageView demoBird = findViewById(R.id.demoBird);
         final Handler handler = new Handler();
         Runnable runnable = new Runnable() {
             int i = 0;
@@ -67,7 +86,7 @@ public class MainActivity extends Activity {
                 } else if (i < 1) {
                     flyUp = false;
                 }
-                demoBird.setImageResource(birdImageArray[i]);
+                demoBird.setImageResource(birdImageIds[i]);
                 handler.postDelayed(this, 250);  //for interval...
             }
         };

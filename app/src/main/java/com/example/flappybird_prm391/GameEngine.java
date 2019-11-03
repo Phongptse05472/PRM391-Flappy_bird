@@ -89,6 +89,7 @@ public class GameEngine {
     private int score = 0;
     private List<Bitmap> drawingScore;
 
+    private int nextScorePipe = 0;
     private int nextPipe = 0;
 
     /**
@@ -190,21 +191,28 @@ public class GameEngine {
             }
             // Die if bird touch the ground or pipe
             if(bird.getY() > screenHeight - ground.getHeight() - bird.getHeight()
-                    || (bird.getX() >= (bottomPipe[nextPipe].getX() - bird.getWidth())
-                        && bird.getX() <= (bottomPipe[nextPipe].getX() + bottomPipe[0].getWidth() + bird.getWidth())
+                    || (bird.getX() > (bottomPipe[nextPipe].getX() - bird.getWidth())
+                        && bird.getX() < (bottomPipe[nextPipe].getX() + bottomPipe[0].getWidth())
                         && (bird.getY() >= (bottomPipe[nextPipe].getY() - bird.getHeight()) || bird.getY() <= (topPipe[nextPipe].getY() + topPipe[0].getHeight())))) {
                 state = GameState.GAMEOVER;
                 sound.playHit();
             }
             // Score counting
-            if(bird.getX() > topPipe[nextPipe].getX() + bird.getWidth()/2){
+            if(bird.getX() >= topPipe[nextScorePipe].getX() + (topPipe[0].getWidth() - bird.getWidth())/2 && state.equals(GameState.PLAYING)){
+                if(nextScorePipe == 2){
+                    nextScorePipe = 0;
+                } else {
+                    nextScorePipe++;
+                }
+                score++;
+                sound.playPoint();
+            }
+            if(bird.getX() >= topPipe[nextPipe].getX() + topPipe[0].getWidth()){
                 if(nextPipe == 2){
                     nextPipe = 0;
                 } else {
                     nextPipe++;
                 }
-                score++;
-                sound.playPoint();
             }
         }
         // Draw pipes
@@ -245,7 +253,8 @@ public class GameEngine {
     private final int ROTATE_SPEED = 5;
 
     void gameover(Canvas canvas){
-        if (bird.getY() > screenHeight - ground.getHeight() - bird.getHeight() + bird.getVelocity()){
+        if (bird.getY() > screenHeight - ground.getHeight() - bird.getHeight()){
+            bird.setY(screenHeight - ground.getHeight() - (birdDegree != 90 ? bird.getHeight()*2 : bird.getHeight()/2));
             state = GameState.STOPPED;
         }
         if(!state.equals(GameState.STOPPED)){
@@ -261,6 +270,7 @@ public class GameEngine {
             Bitmap scaledBitmap = Bitmap.createScaledBitmap(bird.getFrame()[1], bird.getFrame()[1].getWidth(), bird.getFrame()[1].getHeight(), true);
             bird.getFrame()[1] = Bitmap.createBitmap(bird.getFrame()[1], 0, 0, scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix, true);
         }
+
         // Draw pipes
         for(int i = 0; i < PIPE_NUMBER; i++){
             canvas.drawBitmap(topPipe[i].getFrame(), topPipe[i].getX(), topPipe[i].getY() , null);

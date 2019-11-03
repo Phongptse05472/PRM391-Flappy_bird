@@ -5,8 +5,6 @@ import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
-import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.os.Bundle;
 import android.os.Handler;
@@ -15,18 +13,15 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
 
 import com.example.flappybird_prm391.model.Score;
-
-import java.security.cert.CollectionCertStoreParameters;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class MainGameActivity extends Activity {
 
@@ -37,6 +32,7 @@ public class MainGameActivity extends Activity {
     ImageButton btnViewScore;
     ImageView gameOverTitle;
     ImageView scoreBoard;
+    ImageView medal;
     LinearLayout scoreDisplay;
     LinearLayout bestScoreDisplay;
     Point displaySize;
@@ -58,6 +54,8 @@ public class MainGameActivity extends Activity {
         gameOverTitle.setVisibility(View.INVISIBLE);
         scoreBoard = findViewById(R.id.scoreBoard);
         scoreBoard.setVisibility(View.INVISIBLE);
+        medal = findViewById(R.id.medal);
+        medal.setVisibility(View.INVISIBLE);
         gameOverLayout = findViewById(R.id.gameOverLayout);
         scoreDisplay = findViewById(R.id.scoreDisplay);
         scoreDisplay.setVisibility(View.INVISIBLE);
@@ -69,12 +67,24 @@ public class MainGameActivity extends Activity {
         btnOk.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(btnOk.getAlpha() == 1f){
-                    MainGameActivity screen = (MainGameActivity) context;
-                    Intent intent = new Intent(screen, MainActivity.class);
-                    startActivity(intent);
-                    ((Activity) context).finish();
-                }
+            if(btnOk.getAlpha() == 1f){
+                MainGameActivity screen = (MainGameActivity) context;
+                Intent intent = new Intent(screen, MainActivity.class);
+                startActivity(intent);
+                screen.finish();
+            }
+            }
+        });
+
+        btnViewScore.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+            if(btnViewScore.getAlpha() == 1f){
+                MainGameActivity screen = (MainGameActivity) context;
+                Intent intent = new Intent(screen, ScoreboardActivity.class);
+                startActivity(intent);
+                screen.finish();
+            }
             }
         });
     }
@@ -91,7 +101,7 @@ public class MainGameActivity extends Activity {
         gameView.resume();
     }
 
-    public void gameover(int score) {
+    public void gameover(final int score) {
         NumberDisplayController ndc = new NumberDisplayController();
         // Score Management
         Score top = updateLocalScoreBoard(score);
@@ -112,7 +122,10 @@ public class MainGameActivity extends Activity {
         final ObjectAnimator bestScoreFadeInAnimator = ObjectAnimator.ofFloat(bestScoreDisplay, "alpha", 0f, 1f);
         bestScoreFadeInAnimator.setDuration(1000);
         final AnimatorSet animatorSet = new AnimatorSet();
-
+        // Medal
+        final Integer medalId = getMedal(score);
+        final ObjectAnimator medalFadeInAnimator = ObjectAnimator.ofFloat(medal, "alpha", 0f, 1f);
+        medalFadeInAnimator.setDuration(1000);
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
@@ -125,6 +138,12 @@ public class MainGameActivity extends Activity {
                 btnOk.setAlpha(0f);
                 btnViewScore.setVisibility(View.VISIBLE);
                 btnViewScore.setAlpha(0f);
+                // Medal
+                if(medalId != null) {
+                    medal.setImageResource(medalId);
+                    medal.setVisibility(View.VISIBLE);
+                    medal.setAlpha(0f);
+                }
                 // Session score
                 scoreDisplay.setVisibility(View.VISIBLE);
                 scoreDisplay.setAlpha(0f);
@@ -147,11 +166,29 @@ public class MainGameActivity extends Activity {
                 }
                 // Start end game animations
                 animatorSet.play(titleFadeInAnimator).before(scoreBoardFadeInAnimator);
-                animatorSet.play(scoreBoardFadeInAnimator).with(scoreFadeInAnimator).with(bestScoreFadeInAnimator);
+                if(medalId != null) {
+                    animatorSet.play(scoreBoardFadeInAnimator).with(scoreFadeInAnimator).with(bestScoreFadeInAnimator).with(medalFadeInAnimator);
+                } else {
+                    animatorSet.play(scoreBoardFadeInAnimator).with(scoreFadeInAnimator).with(bestScoreFadeInAnimator);
+                }
                 animatorSet.play(btnScoreFadeInAnimator).with(btnOkFadeInAnimator).after(scoreBoardFadeInAnimator);
                 animatorSet.start();
             }
         });
+    }
+
+    public Integer getMedal(int score){
+        if(score >= 10 && score < 20){
+            return R.drawable.medal_bronze;
+        } else if(score >= 20 && score < 30) {
+            return R.drawable.medal_sliver;
+        } else if(score >= 30 && score < 50) {
+            return R.drawable.medal_gold;
+        } else if(score >= 50) {
+            return R.drawable.medal_platium;
+        } else {
+            return null;
+        }
     }
 
     public String getCurrentDateString(){
@@ -172,6 +209,7 @@ public class MainGameActivity extends Activity {
         scoreBoard.add(new Score(-1, getCurrentDateString(), currentScore));
         Collections.sort(scoreBoard);
         scoreBoard = scoreBoard.subList(0, scoreBoard.size() < 10 ? scoreBoard.size() : 10);
+        localScoreManagement.clearData();
         localScoreManagement.insertBatchScore(scoreBoard);
         return scoreBoard.get(0);
     }
