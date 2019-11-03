@@ -6,6 +6,7 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Point;
 import android.util.DisplayMetrics;
 import android.view.Display;
@@ -15,7 +16,6 @@ import com.example.flappybird_prm391.model.Bird;
 import com.example.flappybird_prm391.model.Ground;
 import com.example.flappybird_prm391.model.Pipe;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -30,11 +30,6 @@ public class GameEngine {
      * String number -> screen display number generator
      */
     private NumberDisplayController numberDisplay;
-
-    /**
-     * Device display
-     */
-    private Display display;
 
     /**
      * Coordinate of screen bottom
@@ -78,7 +73,13 @@ public class GameEngine {
     /**
      * Game state
      */
-    private boolean playing = false, gameover = false;
+    public enum GameState {
+        READY,
+        PLAYING,
+        GAMEOVER,
+        STOPPED
+    }
+    private GameState state = GameState.READY;
 
     /**
      * Score
@@ -114,7 +115,7 @@ public class GameEngine {
      */
     private int pipe_distance;
 
-    public GameEngine(Context context, Resources resources, Point screensize) {
+    GameEngine(Context context, Resources resources, Point screensize) {
         // Initialize sound
         sound = new SoundController(context);
         // Initialize display number generator
@@ -125,7 +126,7 @@ public class GameEngine {
         screenHeight = screensize.y;
         screenWidth = screensize.x;
 //        setScreenSize(context);
-        SCORE_X = screenHeight * 0.1f;
+        SCORE_X = 0.5f;
         SCORE_Y = screenWidth * 0.15f;
         pipe_distance = Math.round(screenWidth * PIPE_DISTANCE_SCREENWITDH_RELATIVE);
         // Initialize ready state object
@@ -164,8 +165,8 @@ public class GameEngine {
         ground.setY(screenHeight - ground.getHeight());
     }
 
-    public void update(Canvas canvas){
-        if(playing){
+    void update(Canvas canvas){
+        if(state == GameState.PLAYING){
             // Calculate bird position
             bird.setVelocity(bird.getVelocity() - GRAVITY);
             bird.setY(bird.getY() - bird.getVelocity());
@@ -190,11 +191,10 @@ public class GameEngine {
             // Die if bird touch the ground or pipe
             if(bird.getY() > screenHeight - ground.getHeight() - bird.getHeight()
                     || (bird.getX() >= (bottomPipe[nextPipe].getX() - bird.getWidth())
-                        && bird.getX() <= (bottomPipe[nextPipe].getX() + bottomPipe[0].getWidth() - bird.getWidth())
+                        && bird.getX() <= (bottomPipe[nextPipe].getX() + bottomPipe[0].getWidth() + bird.getWidth())
                         && (bird.getY() >= (bottomPipe[nextPipe].getY() - bird.getHeight()) || bird.getY() <= (topPipe[nextPipe].getY() + topPipe[0].getHeight())))) {
-                playing = false;
+                state = GameState.GAMEOVER;
                 sound.playHit();
-                gameover = true;
             }
             // Score counting
             if(bird.getX() > topPipe[nextPipe].getX() + bird.getWidth()/2){
@@ -207,11 +207,6 @@ public class GameEngine {
                 sound.playPoint();
             }
         }
-        // Draw bird
-        canvas.drawBitmap(bird.getFrame()[bird.getCurrentFrame()],
-                bird.getX(),
-                bird.getY(),
-                null);
         // Draw pipes
         for(int i = 0; i < PIPE_NUMBER; i++){
             canvas.drawBitmap(topPipe[i].getFrame(), topPipe[i].getX(), topPipe[i].getY() , null);
@@ -222,14 +217,21 @@ public class GameEngine {
                 ground.getX(),
                 ground.getY(),
                 null);
+        // Draw bird
+        canvas.drawBitmap(bird.getFrame()[bird.getCurrentFrame()],
+                bird.getX(),
+                bird.getY(),
+                null);
         // Draw score
-        drawingScore = numberDisplay.bigNum2Display(String.valueOf(score));
-        for(int i = 0; i < drawingScore.size(); i++){
-            canvas.drawBitmap(drawingScore.get(i), SCORE_X + drawingScore.get(i).getWidth()*i + 10, SCORE_Y, null);
+        if(state == GameState.PLAYING){
+            drawingScore = numberDisplay.bigNum2Display(String.valueOf(score));
+            for(int i = 0; i < drawingScore.size(); i++){
+                canvas.drawBitmap(drawingScore.get(i), (screenWidth - drawingScore.size()*drawingScore.get(0).getWidth())*SCORE_X + drawingScore.get(i).getWidth()*i + 10, SCORE_Y, null);
+            }
         }
     }
 
-    public void ready(Canvas canvas){
+    void ready(Canvas canvas){
         if(manualShowing){
             canvas.drawBitmap(ready, READY_X, READY_Y,null);
             canvas.drawBitmap(manual, MANUAL_X, MANUAL_Y,null);
@@ -237,6 +239,43 @@ public class GameEngine {
         } else {
             manualShowing = true;
         }
+    }
+
+    private int birdDegree = 90;
+    private final int ROTATE_SPEED = 5;
+
+    void gameover(Canvas canvas){
+        if (bird.getY() > screenHeight - ground.getHeight() - bird.getHeight() + bird.getVelocity()){
+            state = GameState.STOPPED;
+        }
+        if(!state.equals(GameState.STOPPED)){
+            // Calculate bird position
+            bird.setVelocity(bird.getVelocity() - GRAVITY);
+            bird.setX(bird.getX() - ROTATE_SPEED);
+            bird.setY(bird.getY() - bird.getVelocity());
+            Matrix matrix = new Matrix();
+            if(birdDegree >= ROTATE_SPEED){
+                matrix.postRotate(ROTATE_SPEED);
+                birdDegree -= ROTATE_SPEED;
+            }
+            Bitmap scaledBitmap = Bitmap.createScaledBitmap(bird.getFrame()[1], bird.getFrame()[1].getWidth(), bird.getFrame()[1].getHeight(), true);
+            bird.getFrame()[1] = Bitmap.createBitmap(bird.getFrame()[1], 0, 0, scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix, true);
+        }
+        // Draw pipes
+        for(int i = 0; i < PIPE_NUMBER; i++){
+            canvas.drawBitmap(topPipe[i].getFrame(), topPipe[i].getX(), topPipe[i].getY() , null);
+            canvas.drawBitmap(bottomPipe[i].getFrame(), bottomPipe[i].getX(), bottomPipe[i].getY(), null);
+        }
+        // Draw ground
+        canvas.drawBitmap(ground.getFrame(),
+                ground.getX(),
+                ground.getY(),
+                null);
+        // Draw bird
+        canvas.drawBitmap(bird.getFrame()[1],
+                bird.getX(),
+                bird.getY(),
+                null);
     }
 
     /**
@@ -266,44 +305,23 @@ public class GameEngine {
         return (screenHeight/5.0f) / rawGroundHeight;
     }
 
-    /**
-     * Get screen size
-     * @param context activity context
-     */
-    private void setScreenSize(Context context){
-        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-        Display display = wm.getDefaultDisplay();
-        DisplayMetrics metrics = new DisplayMetrics();
-        display.getMetrics(metrics);
-        screenWidth = metrics.widthPixels;
-        screenHeight = metrics.heightPixels;
-    }
-
-    public boolean isPlaying() {
-        return playing;
-    }
-
-    public void setPlaying(boolean playing) {
-        this.playing = playing;
-    }
-
-    public boolean isGameover() {
-        return gameover;
-    }
-
-    public void setGameover(boolean gameover) {
-        this.gameover = gameover;
-    }
-
-    public Bird getBird() {
+    Bird getBird() {
         return bird;
     }
 
-    public void setBird(Bird bird) {
-        this.bird = bird;
+    SoundController getSound() {
+        return sound;
     }
 
-    public SoundController getSound() {
-        return sound;
+    GameState getState() {
+        return state;
+    }
+
+    void setState(GameState state) {
+        this.state = state;
+    }
+
+    int getScore() {
+        return score;
     }
 }

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Point;
 import android.os.SystemClock;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -14,6 +15,8 @@ import java.util.Random;
 public class GameView_SurfaceView extends SurfaceView implements Runnable {
 
 //    GameThread gameThread;
+//    Point screenSize;
+    MainGameActivity host;
     SurfaceHolder holder; // Current screen holder
     GameEngine gameEngine; // The game itself
     Thread thread; // Game running thread
@@ -23,8 +26,12 @@ public class GameView_SurfaceView extends SurfaceView implements Runnable {
     private final int SCREEN_DELAY_PLAYING_MILIS = 20; // Screen refresh rate count in milisecond when playing
 
 
-    public GameView_SurfaceView(Context context, Point screenSize) {
-        super(context);
+    public void init(Point screenSize){
+        gameEngine = new GameEngine(host, host.getResources(), screenSize);
+    }
+
+    public GameView_SurfaceView(Context context, AttributeSet attrs) {
+        super(context, attrs);
         this.holder = getHolder();
         // Add this as surfaceHolder callback object.
 //        holder.addCallback(this);
@@ -32,11 +39,11 @@ public class GameView_SurfaceView extends SurfaceView implements Runnable {
         setFocusable(true);
         Random random = new Random();
         setBackgroundResource(random.nextBoolean() ? R.drawable.background_day : R.drawable.background_night);
-        gameEngine = new GameEngine(context, context.getResources(), screenSize);
+        this.host = (MainGameActivity)this.getContext();
 //        gameThread = new GameThread(context, context.getResources(), holder);
     }
 
-//    @Override
+    //    @Override
 //    public void surfaceCreated(SurfaceHolder holder) {
 //        invalidate();
 //        if(!gameThread.isRunning()){
@@ -55,10 +62,16 @@ public class GameView_SurfaceView extends SurfaceView implements Runnable {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if(gameEngine.isPlaying() || gameEngine.isGameover()){
-            gameEngine.update(canvas);
-        } else {
-            gameEngine.ready(canvas);
+        switch (gameEngine.getState()){
+            case READY:
+                gameEngine.ready(canvas);
+                break;
+            case PLAYING:
+                gameEngine.update(canvas);
+                break;
+            case GAMEOVER:
+                gameEngine.gameover(canvas);
+                break;
         }
     }
 
@@ -84,6 +97,12 @@ public class GameView_SurfaceView extends SurfaceView implements Runnable {
         // Looping until the boolean is false
 
         while(isRunning){
+            if(gameEngine.getState() == GameEngine.GameState.STOPPED){
+//                System.out.println("Game stopped");
+                host.gameover(gameEngine.getScore());
+                isRunning = false;
+                continue;
+            }
             if(!holder.getSurface().isValid()){
                 continue;
             }
@@ -103,18 +122,18 @@ public class GameView_SurfaceView extends SurfaceView implements Runnable {
             //loop time
             loopTime = SystemClock.uptimeMillis() - startTime;
             // Pausing here to make sure we update the right amount per second
-            if(gameEngine.isPlaying()) {
-                if(loopTime < SCREEN_DELAY_PLAYING_MILIS){
+            if(gameEngine.getState().equals(GameEngine.GameState.READY)) {
+                if(loopTime < SCREEN_DELAY_READY_MILIS){
                     try{
-                        Thread.sleep(SCREEN_DELAY_PLAYING_MILIS - loopTime);
+                        Thread.sleep(SCREEN_DELAY_READY_MILIS - loopTime);
                     }catch(InterruptedException e){
                         Log.e("Interrupted","Interrupted while sleeping");
                     }
                 }
             } else {
-                if(loopTime < SCREEN_DELAY_READY_MILIS){
+                if(loopTime < SCREEN_DELAY_PLAYING_MILIS){
                     try{
-                        Thread.sleep(SCREEN_DELAY_READY_MILIS - loopTime);
+                        Thread.sleep(SCREEN_DELAY_PLAYING_MILIS - loopTime);
                     }catch(InterruptedException e){
                         Log.e("Interrupted","Interrupted while sleeping");
                     }
@@ -150,11 +169,14 @@ public class GameView_SurfaceView extends SurfaceView implements Runnable {
         if(action == MotionEvent.ACTION_DOWN){
             // Keeps the bird not flying out the screen
 //            System.out.println("Screen pressed, bird:" + gameThread.getGameEngine().getBird().getX() + " - " + gameThread.getGameEngine().getBird().getY());
-            if(gameEngine.getBird().getY() > -gameEngine.getBird().getHeight()) {
-                gameEngine.getBird().setVelocity(35);
+            if(gameEngine.getState() == GameEngine.GameState.PLAYING) {
+                if(gameEngine.getBird().getY() > -gameEngine.getBird().getHeight()) {
+                    gameEngine.getBird().setVelocity(35);
+                }
             }
-            if(!gameEngine.isPlaying() && !gameEngine.isGameover()){
-                gameEngine.setPlaying(true);
+
+            if(gameEngine.getState() == GameEngine.GameState.READY){
+                gameEngine.setState(GameEngine.GameState.PLAYING);
                 gameEngine.getSound().playSwoosh();
             }
         }
