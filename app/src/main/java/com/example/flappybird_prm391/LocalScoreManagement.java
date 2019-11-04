@@ -13,7 +13,7 @@ import java.util.List;
 
 public class LocalScoreManagement extends SQLiteOpenHelper {
 
-    private static final int DATABASE_VERSION = 3;
+    private static final int DATABASE_VERSION = 1;
     private static final String DATABASE_NAME = "Flappybird.db";
     private static final String TABLE_SCORE = "tbl_score";
     private static final String KEY_ID = "ID";
@@ -53,9 +53,14 @@ public class LocalScoreManagement extends SQLiteOpenHelper {
         }
     }
 
+    public void clearData(){
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.execSQL("DELETE FROM "+ TABLE_SCORE);
+    }
+
     public List<Score> getScoreBoard(){
         List<Score> result = new ArrayList<>();
-        String query = "SELECT * FROM " + TABLE_SCORE + " ORDER BY " + KEY_SCORE + " DESC";
+        String query = "SELECT * FROM " + TABLE_SCORE + " ORDER BY " + KEY_SCORE + " DESC LIMIT 10";
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor =  db.rawQuery(query, null);
         if (cursor.moveToFirst()) {

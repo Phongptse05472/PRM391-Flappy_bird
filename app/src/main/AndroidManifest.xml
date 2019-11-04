@@ -20,6 +20,8 @@
         </activity>
         <activity android:name=".MainGameActivity">
         </activity>
+        <activity android:name=".ScoreboardActivity" >
+        </activity>
     </application>
 
 </manifest>

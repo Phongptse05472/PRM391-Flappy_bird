@@ -11,7 +11,6 @@ public class Bird {
     private int width;
     private int height;
     private int currentFrame = 1;
-    private int wingSpeed;
     private int velocity;
     private int x, y;
     private Bitmap[] frame = new Bitmap[3];
@@ -91,11 +90,4 @@ public class Bird {
         this.frame = frame;
     }
 
-    public int getWingSpeed() {
-        return wingSpeed;
-    }
-
-    public void setWingSpeed(int wingSpeed) {
-        this.wingSpeed = wingSpeed;
-    }
 }
