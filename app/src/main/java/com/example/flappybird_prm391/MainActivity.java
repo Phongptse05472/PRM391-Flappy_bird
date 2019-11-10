@@ -1,5 +1,6 @@
 package com.example.flappybird_prm391;
 
+import android.accounts.AccountManager;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -10,6 +11,8 @@ import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.TranslateAnimation;
 import android.widget.ImageView;
+
+import com.google.android.gms.common.AccountPicker;
 
 public class MainActivity extends Activity {
 
@@ -26,11 +29,27 @@ public class MainActivity extends Activity {
     // Screen activity
     Context context;
 
+    // Local data
+    LocalDataHelper localDataHelper;
+
+    // Accountpicker request code
+    private final int ACCOUNT_PICKER_REQUEST_CODE = 1000;
+    private final String ACCOUNT = "account";
+    private final String INITIALIZED = "initialized";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         context = this;
+        localDataHelper = new LocalDataHelper(context);
+        // If user never logon before, get user email
+        if(localDataHelper.getSetting(ACCOUNT).isEmpty() && localDataHelper.getSetting(INITIALIZED).isEmpty()){
+            Intent intent = AccountPicker.newChooseAccountIntent(null, null,
+                    new String[] {"com.google", "com.google.android.legacyimap"},
+                    false, null, null, null, null);
+            startActivityForResult(intent, ACCOUNT_PICKER_REQUEST_CODE);
+        }
         // Btn play onClick event binding
         ImageView btnPlay = findViewById(R.id.btnPlay);
         btnPlay.setOnClickListener(new View.OnClickListener() {
@@ -50,7 +69,7 @@ public class MainActivity extends Activity {
                 if(!btnScoreClicked){
                     btnScoreClicked = true;
                     MainActivity screen = (MainActivity) context;
-                    Intent intent = new Intent(screen, ScoreboardActivity.class);
+                    Intent intent = new Intent(screen, LeaderboardActivity.class);
                     startActivity(intent);
                     ((Activity) context).finish();
                 }
@@ -97,5 +116,24 @@ public class MainActivity extends Activity {
         Intent intent = new Intent(this, MainGameActivity.class);
         startActivity(intent);
         finish();
+    }
+
+    @Override
+    protected void onActivityResult(final int requestCode, final int resultCode,
+                                    final Intent data) {
+        if (requestCode == ACCOUNT_PICKER_REQUEST_CODE && resultCode == RESULT_OK) {
+            String accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
+            System.out.println(accountName.split("@")[0]);
+            localDataHelper.putSetting(ACCOUNT, accountName.split("@")[0]);
+            localDataHelper.putSetting(INITIALIZED, "true");
+        } else if (requestCode == ACCOUNT_PICKER_REQUEST_CODE && resultCode == RESULT_CANCELED) {
+            // No account selected
+            localDataHelper.putSetting(INITIALIZED, "true");
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 }
