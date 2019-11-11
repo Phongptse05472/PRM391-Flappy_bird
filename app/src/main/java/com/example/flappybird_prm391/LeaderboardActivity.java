@@ -16,12 +16,12 @@ import com.example.flappybird_prm391.model.Score;
 
 import java.util.List;
 
-public class ScoreboardActivity extends Activity {
+public class LeaderboardActivity extends Activity {
 
     // Screen activity
     Context context;
     // Local DB
-    LocalScoreManagement localScoreManagement;
+    LocalDataHelper localDataHelper;
     // Score list layout
     LinearLayout colScore;
     LinearLayout colRank;
@@ -37,7 +37,7 @@ public class ScoreboardActivity extends Activity {
         btnOk.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ScoreboardActivity screen = (ScoreboardActivity) context;
+                LeaderboardActivity screen = (LeaderboardActivity) context;
                 Intent intent = new Intent(screen, MainActivity.class);
                 screen.startActivity(intent);
                 screen.finish();
@@ -47,7 +47,10 @@ public class ScoreboardActivity extends Activity {
         btnOnlineScore.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                LeaderboardActivity screen = (LeaderboardActivity) context;
+                Intent intent = new Intent(screen, GlobalLeaderboardActivity.class);
+                screen.startActivity(intent);
+                screen.finish();
             }
         });
         // Text scale
@@ -57,9 +60,9 @@ public class ScoreboardActivity extends Activity {
         colRank = findViewById(R.id.colRank);
         colDate = findViewById(R.id.colDate);
         // DB management initialize
-        localScoreManagement = new LocalScoreManagement(this);
+        localDataHelper = new LocalDataHelper(this);
         // Get top 10
-        List<Score> scores = localScoreManagement.getScoreBoard();
+        List<Score> scores = localDataHelper.getScoreBoard();
         // To display
         for(int i = 1; i <= scores.size(); i++){
             Tuple3<TextView, TextView, TextView> dispVal = makeDisplayScore(this, i, scores.get(i - 1));

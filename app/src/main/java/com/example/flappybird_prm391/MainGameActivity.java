@@ -3,24 +3,39 @@ package com.example.flappybird_prm391;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Point;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.constraintlayout.widget.ConstraintSet;
 
+import com.android.volley.DefaultRetryPolicy;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
+import com.example.flappybird_prm391.constraint.Urls;
 import com.example.flappybird_prm391.model.Score;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 public class MainGameActivity extends Activity {
@@ -36,13 +51,18 @@ public class MainGameActivity extends Activity {
     LinearLayout scoreDisplay;
     LinearLayout bestScoreDisplay;
     Point displaySize;
-    LocalScoreManagement localScoreManagement;
+    LocalDataHelper localDataHelper;
+    ImageView loading;
+
+    // Account
+    private final String ACCOUNT = "account";
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         context = this;
-        localScoreManagement = new LocalScoreManagement(this);
+        localDataHelper = new LocalDataHelper(this);
         displaySize = new Point();
         getWindowManager().getDefaultDisplay().getRealSize(displaySize);
         setContentView(R.layout.game_screen_layout);
@@ -61,6 +81,8 @@ public class MainGameActivity extends Activity {
         scoreDisplay.setVisibility(View.INVISIBLE);
         bestScoreDisplay = findViewById(R.id.bestScoreDisplay);
         bestScoreDisplay.setVisibility(View.INVISIBLE);
+        loading = findViewById(R.id.loading);
+        loading.setVisibility(View.INVISIBLE);
         gameView = findViewById(R.id.gameView);
         gameView.init(displaySize);
 
@@ -81,7 +103,7 @@ public class MainGameActivity extends Activity {
             public void onClick(View v) {
             if(btnViewScore.getAlpha() == 1f){
                 MainGameActivity screen = (MainGameActivity) context;
-                Intent intent = new Intent(screen, ScoreboardActivity.class);
+                Intent intent = new Intent(screen, LeaderboardActivity.class);
                 startActivity(intent);
                 screen.finish();
             }
@@ -102,9 +124,62 @@ public class MainGameActivity extends Activity {
     }
 
     public void gameover(final int score) {
-        NumberDisplayController ndc = new NumberDisplayController();
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+             @Override
+             public void run() {
+                 gameOverLayout.requestFocus();
+                 loading.setVisibility(View.VISIBLE);
+             }
+        });
         // Score Management
-        Score top = updateLocalScoreBoard(score);
+        final Score top = updateLocalScoreBoard(score);
+        // Online Score Handle
+        if(!localDataHelper.getSetting(ACCOUNT).isEmpty()){
+            RequestQueue request = Volley.newRequestQueue(context);
+            try {
+                JSONObject sendData = new JSONObject()
+                        .put("account", localDataHelper.getSetting(ACCOUNT))
+                        .put("score", top.getScore())
+                        .put("mDate", getCurrentDateString());
+
+                JsonObjectRequest objectRequest = new JsonObjectRequest(
+                        Urls.SUBMIT.getType(),
+                        Urls.SUBMIT.getUrl(),
+                        sendData,
+                        new Response.Listener<JSONObject>() {
+                            @Override
+                            public void onResponse(JSONObject response) {
+                                Log.e("Response : ", response.toString());
+                                displayResult(score, top);
+                            }
+                        },
+                        new Response.ErrorListener() {
+                            @Override
+                            public void onErrorResponse(VolleyError error) {
+                                Log.e("Response : ", error.toString());
+                                showErrorDialog("Connection error", "Something wrong with connection, score not saved to online scoreboard");
+                                displayResult(score, top);
+                            }
+                        }
+                );
+                objectRequest.setRetryPolicy(new DefaultRetryPolicy(
+                        10000,
+                        0,
+                        DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+                request.add(objectRequest);
+            } catch (JSONException e) {
+                e.printStackTrace();
+                showErrorDialog("Unknow error", "Something wrong occured, score not saved to online scoreboard");
+                displayResult(score, top);
+            }
+        } else {
+            displayResult(score, top);
+        }
+    }
+
+    public void displayResult(int score, Score top){
+        NumberDisplayController ndc = new NumberDisplayController();
+
         int topscore = top.getScore();
         final List<ImageView> topScoreDisp = ndc.smallNum2Display(context, String.valueOf(topscore));
         final List<ImageView> currentScoreDisp = ndc.smallNum2Display(context, String.valueOf(score));
@@ -129,7 +204,7 @@ public class MainGameActivity extends Activity {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
-                gameOverLayout.requestFocus();
+                loading.setVisibility(View.INVISIBLE);
                 gameOverTitle.setVisibility(View.VISIBLE);
                 gameOverTitle.setAlpha(0f);
                 scoreBoard.setVisibility(View.VISIBLE);
@@ -193,9 +268,12 @@ public class MainGameActivity extends Activity {
 
     public String getCurrentDateString(){
         String result;
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd");
-        LocalDateTime now = LocalDateTime.now();
-        result = dtf.format(now);
+        // Java 8 below not supported
+//        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:dd:mm");
+//        LocalDateTime now = LocalDateTime.now();
+//        result = dtf.format(now);
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy/MM/dd HH:dd:mm");
+        result = simpleDateFormat.format(new Date());
         return result;
     }
 
@@ -205,12 +283,32 @@ public class MainGameActivity extends Activity {
      * @return top score
      */
     public Score updateLocalScoreBoard(int currentScore){
-        List<Score> scoreBoard = localScoreManagement.getScoreBoard();
+        List<Score> scoreBoard = localDataHelper.getScoreBoard();
         scoreBoard.add(new Score(-1, getCurrentDateString(), currentScore));
         Collections.sort(scoreBoard);
         scoreBoard = scoreBoard.subList(0, scoreBoard.size() < 10 ? scoreBoard.size() : 10);
-        localScoreManagement.clearData();
-        localScoreManagement.insertBatchScore(scoreBoard);
+        localDataHelper.clearData();
+        localDataHelper.insertBatchScore(scoreBoard);
         return scoreBoard.get(0);
+    }
+
+    private void showErrorDialog(String title, String message){
+        AlertDialog errorDialog = new AlertDialog.Builder(context).create();
+        errorDialog.setTitle(title);
+        errorDialog.setMessage(message);
+        errorDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+        errorDialog.show();
+    }
+
+    @Override
+    protected void onDestroy () {
+        super.onDestroy();
+        //call close() of the helper class
+        localDataHelper.close();
     }
 }
