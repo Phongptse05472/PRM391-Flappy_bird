@@ -19,7 +19,7 @@
             android:layout_width="match_parent"
             android:layout_height="100dp"
             android:text="Global Leaderboard"
-            android:textSize="40dp"
+            android:textSize="34dp"
             android:textColor="@android:color/black"
             android:gravity="center"/>
 
@@ -37,7 +37,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
                     android:text="Rank"
-                    android:textSize="15sp"
+                    android:textSize="14sp"
                     android:textColor="@android:color/black"
                     android:gravity="center"/>
             </LinearLayout>
@@ -51,7 +51,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
                     android:text="Account"
-                    android:textSize="15sp"
+                    android:textSize="14sp"
                     android:textColor="@android:color/black"
                     android:gravity="center"/>
             </LinearLayout>
@@ -65,7 +65,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
                     android:text="Score"
-                    android:textSize="15sp"
+                    android:textSize="14sp"
                     android:textColor="@android:color/black"
                     android:gravity="center"/>
             </LinearLayout>
@@ -79,7 +79,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
                     android:text="Record date"
-                    android:textSize="15sp"
+                    android:textSize="14sp"
                     android:textColor="@android:color/black"
                     android:gravity="center"/>
             </LinearLayout>

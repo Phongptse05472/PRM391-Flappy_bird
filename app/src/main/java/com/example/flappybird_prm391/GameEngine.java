@@ -254,21 +254,24 @@ public class GameEngine {
 
     void gameover(Canvas canvas){
         if (bird.getY() > screenHeight - ground.getHeight() - bird.getHeight()){
-            bird.setY(screenHeight - ground.getHeight() - (birdDegree != 90 ? bird.getHeight()*2 : bird.getHeight()/2));
+//            System.out.println(Math.round(bird.getHeight() * 3 / (birdDegree/90f)));
+            System.out.println(screenHeight - ground.getHeight() - (birdDegree != 90 ? Math.round(bird.getHeight() * 3 * ((90- birdDegree)/90f)) : bird.getHeight()/2));
+            bird.setY(screenHeight - ground.getHeight() - (birdDegree != 90 ? Math.round(bird.getHeight() * 2.5f * ((90 - birdDegree)/90f)) : bird.getHeight()/2));
             state = GameState.STOPPED;
         }
         if(!state.equals(GameState.STOPPED)){
             // Calculate bird position
             bird.setVelocity(bird.getVelocity() - GRAVITY);
             bird.setX(bird.getX() - ROTATE_SPEED);
-            bird.setY(bird.getY() - bird.getVelocity());
+            bird.setY(bird.getY() - bird.getVelocity() - ROTATE_SPEED);
             Matrix matrix = new Matrix();
             if(birdDegree >= ROTATE_SPEED){
-                matrix.postRotate(ROTATE_SPEED);
+//                matrix.postTranslate(bird.getX(), bird.getY());
+                matrix.postRotate(ROTATE_SPEED, bird.getX(), bird.getY());
                 birdDegree -= ROTATE_SPEED;
             }
-            Bitmap scaledBitmap = Bitmap.createScaledBitmap(bird.getFrame()[1], bird.getFrame()[1].getWidth(), bird.getFrame()[1].getHeight(), true);
-            bird.getFrame()[1] = Bitmap.createBitmap(bird.getFrame()[1], 0, 0, scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix, true);
+//            Bitmap scaledBitmap = Bitmap.createScaledBitmap(bird.getFrame()[1], bird.getFrame()[1].getWidth(), bird.getFrame()[1].getHeight(), true);
+            bird.getFrame()[1] = Bitmap.createBitmap(bird.getFrame()[1], 0, 0, bird.getFrame()[1].getWidth(), bird.getFrame()[1].getHeight(), matrix, true);
         }
 
         // Draw pipes

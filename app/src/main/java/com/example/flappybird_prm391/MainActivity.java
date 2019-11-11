@@ -133,7 +133,9 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    protected void onDestroy() {
+    protected void onDestroy () {
         super.onDestroy();
+        //call close() of the helper class
+        localDataHelper.close();
     }
 }

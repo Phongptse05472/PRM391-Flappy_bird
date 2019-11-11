@@ -31,9 +31,11 @@ import com.example.flappybird_prm391.model.Score;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 public class MainGameActivity extends Activity {
@@ -50,6 +52,7 @@ public class MainGameActivity extends Activity {
     LinearLayout bestScoreDisplay;
     Point displaySize;
     LocalDataHelper localDataHelper;
+    ImageView loading;
 
     // Account
     private final String ACCOUNT = "account";
@@ -78,6 +81,8 @@ public class MainGameActivity extends Activity {
         scoreDisplay.setVisibility(View.INVISIBLE);
         bestScoreDisplay = findViewById(R.id.bestScoreDisplay);
         bestScoreDisplay.setVisibility(View.INVISIBLE);
+        loading = findViewById(R.id.loading);
+        loading.setVisibility(View.INVISIBLE);
         gameView = findViewById(R.id.gameView);
         gameView.init(displaySize);
 
@@ -119,6 +124,13 @@ public class MainGameActivity extends Activity {
     }
 
     public void gameover(final int score) {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+             @Override
+             public void run() {
+                 gameOverLayout.requestFocus();
+                 loading.setVisibility(View.VISIBLE);
+             }
+        });
         // Score Management
         final Score top = updateLocalScoreBoard(score);
         // Online Score Handle
@@ -192,7 +204,7 @@ public class MainGameActivity extends Activity {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
-                gameOverLayout.requestFocus();
+                loading.setVisibility(View.INVISIBLE);
                 gameOverTitle.setVisibility(View.VISIBLE);
                 gameOverTitle.setAlpha(0f);
                 scoreBoard.setVisibility(View.VISIBLE);
@@ -256,9 +268,12 @@ public class MainGameActivity extends Activity {
 
     public String getCurrentDateString(){
         String result;
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:dd:mm");
-        LocalDateTime now = LocalDateTime.now();
-        result = dtf.format(now);
+        // Java 8 below not supported
+//        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:dd:mm");
+//        LocalDateTime now = LocalDateTime.now();
+//        result = dtf.format(now);
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy/MM/dd HH:dd:mm");
+        result = simpleDateFormat.format(new Date());
         return result;
     }
 
@@ -288,5 +303,12 @@ public class MainGameActivity extends Activity {
                     }
                 });
         errorDialog.show();
+    }
+
+    @Override
+    protected void onDestroy () {
+        super.onDestroy();
+        //call close() of the helper class
+        localDataHelper.close();
     }
 }

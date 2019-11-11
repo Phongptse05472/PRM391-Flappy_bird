@@ -3,6 +3,8 @@ package com.example.flappybird_prm391;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Point;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -70,9 +72,11 @@ public class GameView_SurfaceView extends SurfaceView implements Runnable {
                 gameEngine.update(canvas);
                 break;
             case GAMEOVER:
+            case STOPPED:
                 gameEngine.gameover(canvas);
                 break;
         }
+
     }
 
 //    @Override
@@ -108,7 +112,14 @@ public class GameView_SurfaceView extends SurfaceView implements Runnable {
             }
             startTime = SystemClock.uptimeMillis();
             //locking the canvas (not working right now), using invalidate to redraw instead
-            invalidate();
+
+            new Handler(Looper.getMainLooper()).post(new Runnable(){
+                @Override
+                public void run() {
+                    invalidate();
+                }
+            });
+
 //            Canvas canvas;
 //            if (holder.getSurface().isValid()) {
 //                canvas = holder.lockCanvas();

@@ -24,6 +24,8 @@ public class LocalDataHelper extends SQLiteOpenHelper {
     private static final String TABLE_SETTING = "tbl_setting";
     private static final String KEY_SETTING = "SETTING";
     private static final String KEY_VALUE = "VALUE";
+    // Database instance
+    private SQLiteDatabase db;
 
     public LocalDataHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -32,6 +34,7 @@ public class LocalDataHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         // create tables
+        this.db = db;
         String sql = "CREATE TABLE IF NOT EXISTS " + TABLE_SCORE + " ( "
                 + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " + KEY_DATE
                 + " TEXT, " + KEY_SCORE + " INTEGER)";
@@ -50,7 +53,7 @@ public class LocalDataHelper extends SQLiteOpenHelper {
     }
 
     public void insertScore(Score score) {
-        SQLiteDatabase db = this.getWritableDatabase();
+        this.db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(KEY_DATE, score.getDate());
         values.put(KEY_SCORE, score.getScore());
@@ -64,14 +67,14 @@ public class LocalDataHelper extends SQLiteOpenHelper {
     }
 
     public void clearData(){
-        SQLiteDatabase db = this.getWritableDatabase();
+        this.db = this.getWritableDatabase();
         db.execSQL("DELETE FROM "+ TABLE_SCORE);
     }
 
     public List<Score> getScoreBoard(){
         List<Score> result = new ArrayList<>();
         String query = "SELECT * FROM " + TABLE_SCORE + " ORDER BY " + KEY_SCORE + " DESC LIMIT 10";
-        SQLiteDatabase db = this.getReadableDatabase();
+        this.db = this.getReadableDatabase();
         Cursor cursor =  db.rawQuery(query, null);
         if (cursor.moveToFirst()) {
             do {
@@ -89,7 +92,7 @@ public class LocalDataHelper extends SQLiteOpenHelper {
     public Score getTopScore(){
         Score result = new Score();
         String query = "SELECT * FROM " + TABLE_SCORE + " ORDER BY " + KEY_SCORE + " DESC LIMIT 1";
-        SQLiteDatabase db = this.getReadableDatabase();
+        this.db = this.getReadableDatabase();
         Cursor cursor =  db.rawQuery(query, null);
         cursor.moveToFirst();
         if (cursor.moveToFirst()) {
@@ -106,7 +109,7 @@ public class LocalDataHelper extends SQLiteOpenHelper {
     }
 
     public void putSetting(String setting, String value){
-        SQLiteDatabase db = this.getWritableDatabase();
+        this.db = this.getWritableDatabase();
         db.execSQL("DELETE FROM " + TABLE_SETTING + " WHERE " + KEY_SETTING + " = '" + setting + "'");
         ContentValues values = new ContentValues();
         values.put(KEY_SETTING, setting);
@@ -116,7 +119,7 @@ public class LocalDataHelper extends SQLiteOpenHelper {
 
     public String getSetting(String setting){
         String query = "SELECT * FROM " + TABLE_SETTING + " WHERE " + KEY_SETTING + " = '" + setting + "'";
-        SQLiteDatabase db = this.getReadableDatabase();
+        this.db = this.getReadableDatabase();
         Cursor cursor =  db.rawQuery(query, null);
         cursor.moveToFirst();
         String result = "";
@@ -127,5 +130,13 @@ public class LocalDataHelper extends SQLiteOpenHelper {
         }
         cursor.close();
         return result;
+    }
+
+    @Override
+    public synchronized void close () {
+        if (db != null) {
+            db.close();
+            super.close();
+        }
     }
 }
