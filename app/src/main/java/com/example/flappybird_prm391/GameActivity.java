@@ -8,6 +8,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Point;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -25,23 +27,28 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
-import com.example.flappybird_prm391.constraint.Urls;
+import com.example.flappybird_prm391.constant.Urls;
 import com.example.flappybird_prm391.model.Score;
+import com.example.flappybird_prm391.resourceshelper.DisplayNumberBitmapGenerator;
+import com.example.flappybird_prm391.resourceshelper.LocalDataHelper;
+import com.example.flappybird_prm391.resourceshelper.NetworkChecker;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
-public class MainGameActivity extends Activity {
+public class GameActivity extends Activity {
 
     Context context;
-    GameView_SurfaceView gameView;
+    GameView gameView;
     ConstraintLayout gameOverLayout;
     ImageButton btnOk;
     ImageButton btnViewScore;
@@ -90,7 +97,7 @@ public class MainGameActivity extends Activity {
             @Override
             public void onClick(View v) {
             if(btnOk.getAlpha() == 1f){
-                MainGameActivity screen = (MainGameActivity) context;
+                GameActivity screen = (GameActivity) context;
                 Intent intent = new Intent(screen, MainActivity.class);
                 startActivity(intent);
                 screen.finish();
@@ -102,7 +109,7 @@ public class MainGameActivity extends Activity {
             @Override
             public void onClick(View v) {
             if(btnViewScore.getAlpha() == 1f){
-                MainGameActivity screen = (MainGameActivity) context;
+                GameActivity screen = (GameActivity) context;
                 Intent intent = new Intent(screen, LeaderboardActivity.class);
                 startActivity(intent);
                 screen.finish();
@@ -134,42 +141,52 @@ public class MainGameActivity extends Activity {
         // Score Management
         final Score top = updateLocalScoreBoard(score);
         // Online Score Handle
-        if(!localDataHelper.getSetting(ACCOUNT).isEmpty()){
-            RequestQueue request = Volley.newRequestQueue(context);
-            try {
-                JSONObject sendData = new JSONObject()
-                        .put("account", localDataHelper.getSetting(ACCOUNT))
-                        .put("score", top.getScore())
-                        .put("mDate", getCurrentDateString());
+        boolean isHasInternet = false;
+        try {
+            isHasInternet = new NetworkChecker().execute(context).get();
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        if(isHasInternet){
+            if(!localDataHelper.getSetting(ACCOUNT).isEmpty()){
+                RequestQueue request = Volley.newRequestQueue(context);
+                try {
+                    JSONObject sendData = new JSONObject()
+                            .put("account", localDataHelper.getSetting(ACCOUNT))
+                            .put("score", top.getScore())
+                            .put("mDate", getCurrentDateString());
 
-                JsonObjectRequest objectRequest = new JsonObjectRequest(
-                        Urls.SUBMIT.getType(),
-                        Urls.SUBMIT.getUrl(),
-                        sendData,
-                        new Response.Listener<JSONObject>() {
-                            @Override
-                            public void onResponse(JSONObject response) {
-                                Log.e("Response : ", response.toString());
-                                displayResult(score, top);
+                    JsonObjectRequest objectRequest = new JsonObjectRequest(
+                            Urls.SUBMIT.getType(),
+                            Urls.SUBMIT.getUrl(),
+                            sendData,
+                            new Response.Listener<JSONObject>() {
+                                @Override
+                                public void onResponse(JSONObject response) {
+                                    Log.e("Response : ", response.toString());
+                                    displayResult(score, top);
+                                }
+                            },
+                            new Response.ErrorListener() {
+                                @Override
+                                public void onErrorResponse(VolleyError error) {
+                                    Log.e("Response : ", error.toString());
+                                    showErrorDialog("Connection error", "Something wrong with connection, score not saved to online scoreboard");
+                                    displayResult(score, top);
+                                }
                             }
-                        },
-                        new Response.ErrorListener() {
-                            @Override
-                            public void onErrorResponse(VolleyError error) {
-                                Log.e("Response : ", error.toString());
-                                showErrorDialog("Connection error", "Something wrong with connection, score not saved to online scoreboard");
-                                displayResult(score, top);
-                            }
-                        }
-                );
-                objectRequest.setRetryPolicy(new DefaultRetryPolicy(
-                        10000,
-                        0,
-                        DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
-                request.add(objectRequest);
-            } catch (JSONException e) {
-                e.printStackTrace();
-                showErrorDialog("Unknow error", "Something wrong occured, score not saved to online scoreboard");
+                    );
+                    objectRequest.setRetryPolicy(new DefaultRetryPolicy(
+                            10000,
+                            0,
+                            DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+                    request.add(objectRequest);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    showErrorDialog("Unknow error", "Something wrong occured, score not saved to online scoreboard");
+                    displayResult(score, top);
+                }
+            } else {
                 displayResult(score, top);
             }
         } else {
@@ -178,11 +195,11 @@ public class MainGameActivity extends Activity {
     }
 
     public void displayResult(int score, Score top){
-        NumberDisplayController ndc = new NumberDisplayController();
+        DisplayNumberBitmapGenerator dnbg = new DisplayNumberBitmapGenerator();
 
         int topscore = top.getScore();
-        final List<ImageView> topScoreDisp = ndc.smallNum2Display(context, String.valueOf(topscore));
-        final List<ImageView> currentScoreDisp = ndc.smallNum2Display(context, String.valueOf(score));
+        final List<ImageView> topScoreDisp = dnbg.smallNum2Display(context, String.valueOf(topscore));
+        final List<ImageView> currentScoreDisp = dnbg.smallNum2Display(context, String.valueOf(score));
         // Animations
         final ObjectAnimator titleFadeInAnimator = ObjectAnimator.ofFloat(gameOverTitle, "alpha", 0f, 1f);
         titleFadeInAnimator.setDuration(1000);
@@ -268,10 +285,6 @@ public class MainGameActivity extends Activity {
 
     public String getCurrentDateString(){
         String result;
-        // Java 8 below not supported
-//        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:dd:mm");
-//        LocalDateTime now = LocalDateTime.now();
-//        result = dtf.format(now);
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy/MM/dd HH:dd:mm");
         result = simpleDateFormat.format(new Date());
         return result;

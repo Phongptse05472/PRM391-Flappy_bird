@@ -13,6 +13,7 @@ import android.widget.TextView;
 
 import com.example.flappybird_prm391.common.Tuple3;
 import com.example.flappybird_prm391.model.Score;
+import com.example.flappybird_prm391.resourceshelper.LocalDataHelper;
 
 import java.util.List;
 
@@ -87,7 +88,7 @@ public class LeaderboardActivity extends Activity {
      * Create textview to display from score obj
      * @param context screen activity
      * @param score score to create textview
-     * @return Pair of Score - Date
+     * @return Triple objects of Rank - Score - Date
      */
     private Tuple3<TextView, TextView, TextView> makeDisplayScore(Context context, int rank, Score score) {
         // Rank

@@ -4,15 +4,25 @@ import android.accounts.AccountManager;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.TranslateAnimation;
 import android.widget.ImageView;
 
+import com.example.flappybird_prm391.resourceshelper.LocalDataHelper;
+import com.example.flappybird_prm391.resourceshelper.NetworkChecker;
 import com.google.android.gms.common.AccountPicker;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends Activity {
 
@@ -44,11 +54,19 @@ public class MainActivity extends Activity {
         context = this;
         localDataHelper = new LocalDataHelper(context);
         // If user never logon before, get user email
-        if(localDataHelper.getSetting(ACCOUNT).isEmpty() && localDataHelper.getSetting(INITIALIZED).isEmpty()){
-            Intent intent = AccountPicker.newChooseAccountIntent(null, null,
-                    new String[] {"com.google", "com.google.android.legacyimap"},
-                    false, null, null, null, null);
-            startActivityForResult(intent, ACCOUNT_PICKER_REQUEST_CODE);
+        boolean isHasInternet = false;
+        try {
+            isHasInternet = new NetworkChecker().execute(context).get();
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        if(isHasInternet){
+            if(localDataHelper.getSetting(ACCOUNT).isEmpty() && localDataHelper.getSetting(INITIALIZED).isEmpty()){
+                Intent intent = AccountPicker.newChooseAccountIntent(null, null,
+                        new String[] {"com.google", "com.google.android.legacyimap"},
+                        false, null, null, null, null);
+                startActivityForResult(intent, ACCOUNT_PICKER_REQUEST_CODE);
+            }
         }
         // Btn play onClick event binding
         ImageView btnPlay = findViewById(R.id.btnPlay);
@@ -113,7 +131,7 @@ public class MainActivity extends Activity {
     }
 
     public void startGame(View view){
-        Intent intent = new Intent(this, MainGameActivity.class);
+        Intent intent = new Intent(this, GameActivity.class);
         startActivity(intent);
         finish();
     }

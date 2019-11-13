@@ -7,7 +7,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
-import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
@@ -23,8 +22,10 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.flappybird_prm391.common.Tuple4;
-import com.example.flappybird_prm391.constraint.Urls;
+import com.example.flappybird_prm391.constant.Urls;
 import com.example.flappybird_prm391.model.OnlineScore;
+import com.example.flappybird_prm391.resourceshelper.LocalDataHelper;
+import com.example.flappybird_prm391.resourceshelper.NetworkChecker;
 import com.google.android.gms.common.AccountPicker;
 
 import org.json.JSONArray;
@@ -34,6 +35,7 @@ import org.json.JSONObject;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class GlobalLeaderboardActivity extends Activity {
 
@@ -89,22 +91,27 @@ public class GlobalLeaderboardActivity extends Activity {
         // DB management initialize
         localDataHelper = new LocalDataHelper(this);
         // Get top 100
-        if(localDataHelper.getSetting(ACCOUNT).isEmpty()){
-            Intent intent = AccountPicker.newChooseAccountIntent(null, null,
-                    new String[] {"com.google", "com.google.android.legacyimap"},
-                    false, null, null, null, null);
-            startActivityForResult(intent, ACCOUNT_PICKER_REQUEST_CODE);
-        } else {
-            callServer();
+        boolean isHasInternet = false;
+        try {
+            isHasInternet = new NetworkChecker().execute(context).get();
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
         }
-
-
+        if(!isHasInternet){
+            showWarningDialog("Connection error", "Device is offline");
+        } else {
+            if(localDataHelper.getSetting(ACCOUNT).isEmpty()){
+                Intent intent = AccountPicker.newChooseAccountIntent(null, null,
+                        new String[] {"com.google", "com.google.android.legacyimap"},
+                        false, null, null, null, null);
+                startActivityForResult(intent, ACCOUNT_PICKER_REQUEST_CODE);
+            } else {
+                callServer();
+            }
+        }
     }
 
-    private void callServer(){
-        if(!isNetworkConnected()){
-            showWarningDialog("Connection error", "Device is offline");
-        }
+    private void callServer()  {
         accountName = localDataHelper.getSetting(ACCOUNT);
         RequestQueue request = Volley.newRequestQueue(context);
         try {
@@ -244,7 +251,7 @@ public class GlobalLeaderboardActivity extends Activity {
      * Create textview to display from score obj
      * @param context screen activity
      * @param score score to create textview
-     * @return Pair of Score - Date
+     * @return Quad textview objects of Rank - Account - Score - Date
      */
     private Tuple4<TextView, TextView, TextView, TextView> makeDisplayScore(Context context, OnlineScore score, int color) {
         // Rank
@@ -304,11 +311,4 @@ public class GlobalLeaderboardActivity extends Activity {
                 });
         dialog.show();
     }
-
-    private boolean isNetworkConnected() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-
-        return cm.getActiveNetworkInfo() != null && cm.getActiveNetworkInfo().isConnected();
-    }
-
 }

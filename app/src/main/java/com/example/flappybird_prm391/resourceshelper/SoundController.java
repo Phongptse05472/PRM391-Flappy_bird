@@ -1,7 +1,9 @@
-package com.example.flappybird_prm391;
+package com.example.flappybird_prm391.resourceshelper;
 
 import android.content.Context;
 import android.media.MediaPlayer;
+
+import com.example.flappybird_prm391.R;
 
 public class SoundController {
 
