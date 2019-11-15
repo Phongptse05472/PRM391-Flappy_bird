@@ -1,4 +1,4 @@
-package com.example.flappybird_prm391;
+package com.example.flappybird_prm391.resourceshelper;
 
 import android.content.ContentValues;
 import android.content.Context;

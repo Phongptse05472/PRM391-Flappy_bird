@@ -1,9 +1,9 @@
-package com.example.flappybird_prm391.constraint;
+package com.example.flappybird_prm391.constant;
 
 import com.android.volley.Request;
 
 /**
- * RESTApi Backend Server Urls
+ * RESTful API Backend Server Urls
  */
 public enum  Urls {
 

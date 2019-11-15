@@ -1,4 +1,4 @@
-package com.example.flappybird_prm391;
+package com.example.flappybird_prm391.resourceshelper;
 
 import android.content.Context;
 import android.content.res.Resources;
@@ -7,10 +7,12 @@ import android.graphics.BitmapFactory;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import com.example.flappybird_prm391.R;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class NumberDisplayController {
+public class DisplayNumberBitmapGenerator {
 
     private int[] smallNumIds = {
             R.drawable.num0_small,
@@ -41,11 +43,11 @@ public class NumberDisplayController {
     private Bitmap[] smallNums = new Bitmap[10];
     private Bitmap[] bigNums = new Bitmap[10];
 
-    public NumberDisplayController(){
+    public DisplayNumberBitmapGenerator(){
 
     }
 
-    public NumberDisplayController(Resources resources) {
+    public DisplayNumberBitmapGenerator(Resources resources) {
         smallNums[0] = BitmapFactory.decodeResource(resources, R.drawable.num0_small);
         smallNums[1] = BitmapFactory.decodeResource(resources, R.drawable.num1_small);
         smallNums[2] = BitmapFactory.decodeResource(resources, R.drawable.num2_small);
@@ -68,7 +70,7 @@ public class NumberDisplayController {
         bigNums[9] = BitmapFactory.decodeResource(resources, R.drawable.num9);
     }
 
-    List<Bitmap> smallNum2Display(String num){
+    public List<Bitmap> smallNum2Display(String num){
         List<Bitmap> result = new ArrayList<>(num.length());
         try {
             Integer.parseInt(num);
@@ -82,7 +84,7 @@ public class NumberDisplayController {
         return result;
     }
 
-    List<Bitmap> bigNum2Display(String num){
+    public List<Bitmap> bigNum2Display(String num){
         List<Bitmap> result = new ArrayList<>(num.length());
         try {
             Integer.parseInt(num);
@@ -96,7 +98,7 @@ public class NumberDisplayController {
         return result;
     }
 
-    List<ImageView> smallNum2Display(Context context, String num){
+    public List<ImageView> smallNum2Display(Context context, String num){
         List<ImageView> result = new ArrayList<>(num.length());
         try {
             Integer.parseInt(num);

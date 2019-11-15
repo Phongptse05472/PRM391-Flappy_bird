@@ -1,6 +1,5 @@
 package com.example.flappybird_prm391;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -8,13 +7,12 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Point;
-import android.util.DisplayMetrics;
-import android.view.Display;
-import android.view.WindowManager;
 
 import com.example.flappybird_prm391.model.Bird;
 import com.example.flappybird_prm391.model.Ground;
 import com.example.flappybird_prm391.model.Pipe;
+import com.example.flappybird_prm391.resourceshelper.DisplayNumberBitmapGenerator;
+import com.example.flappybird_prm391.resourceshelper.SoundController;
 
 import java.util.List;
 import java.util.Random;
@@ -29,7 +27,7 @@ public class GameEngine {
     /**
      * String number -> screen display number generator
      */
-    private NumberDisplayController numberDisplay;
+    private DisplayNumberBitmapGenerator numberDisplay;
 
     /**
      * Coordinate of screen bottom
@@ -120,7 +118,7 @@ public class GameEngine {
         // Initialize sound
         sound = new SoundController(context);
         // Initialize display number generator
-        numberDisplay = new NumberDisplayController(resources);
+        numberDisplay = new DisplayNumberBitmapGenerator(resources);
         drawingScore = numberDisplay.bigNum2Display(String.valueOf(score));
         // Initialize screen
         random = new Random();
@@ -249,6 +247,7 @@ public class GameEngine {
         }
     }
 
+    // Variable using to simulate bird falling animation
     private int birdDegree = 90;
     private final int ROTATE_SPEED = 5;
 
